@@ -1,77 +1,97 @@
 "use strict";
 
+// 숫자 포맷팅 함수
 function formatNumber(num) {
     if (isNaN(num)) return ""; // 숫자가 아니면 빈 문자열 반환
     return num.toLocaleString();
 }
 
+// 숫자 포맷 해제 함수
 function unformatNumber(str) {
-    if (typeof str !== 'string') return NaN;
-    return Number(str.replace(/,/g, ""));
+    if (!str || typeof str !== "string") return NaN; // 빈 문자열 또는 비문자열 처리
+    return Number(str.replace(/,/g, "")) || NaN; // 변환 실패 시 NaN 반환
 }
 
-const loanAmountInput = document.getElementById('loanAmount');
-if (loanAmountInput) { // loanAmountInput이 null이 아닌지 확인
-    loanAmountInput.addEventListener('input', function(e) {
+// 입력 필드에 숫자 포맷 적용
+const loanAmountInput = document.getElementById("loanAmount");
+if (loanAmountInput) {
+    loanAmountInput.addEventListener("input", function () {
         this.value = formatNumber(unformatNumber(this.value));
     });
 }
 
-
+// 상환액 계산 함수
 function calculateRepayment() {
     try {
-        const loanAmountInput = document.getElementById('loanAmount').value.trim();
+        // 입력값 가져오기
+        const loanAmountInput = document.getElementById("loanAmount").value.trim();
         const loanAmount = unformatNumber(loanAmountInput);
-        const loanPeriodInput = document.getElementById('loanPeriod').value.trim();
+        const loanPeriodInput = document.getElementById("loanPeriod").value.trim();
         const loanPeriod = parseInt(loanPeriodInput);
-        const interestRateInput = document.getElementById('interestRate').value.trim();
+        const interestRateInput = document.getElementById("interestRate").value.trim();
         const interestRate = parseFloat(interestRateInput) / 100;
-        const repaymentMethod = document.getElementById('repaymentMethod').value;
-        const resultDiv = document.getElementById('result');
+        const repaymentMethod = document.getElementById("repaymentMethod").value;
+        const resultDiv = document.getElementById("result");
 
+        // 결과 초기화
         resultDiv.textContent = "";
 
-        if (isNaN(loanAmount) || isNaN(loanPeriod) || isNaN(interestRate) || loanAmount <= 0 || loanPeriod <= 0 || interestRate < 0) {
-            console.error("Invalid input:", { loanAmount, loanPeriod, interestRate});
-            resultDiv.textContent = '유효한 값을 입력해주세요 (모든 값은 0보다 커야 합니다).';
+        // 입력값 검증
+        if (
+            isNaN(loanAmount) ||
+            isNaN(loanPeriod) ||
+            isNaN(interestRate) ||
+            loanAmount <= 0 ||
+            loanPeriod <= 0 ||
+            interestRate < 0
+        ) {
+            console.error("Invalid input:", { loanAmount, loanPeriod, interestRate });
+            resultDiv.textContent = "유효한 값을 입력해주세요 (모든 값은 0보다 커야 합니다).";
             return;
         }
 
-        let resultText = '';
+        let resultText = "";
 
+        // 상환 방식에 따른 계산
         switch (repaymentMethod) {
-            case '만기일시상환':
+            case "만기일시상환":
                 const totalInterest = Math.floor(loanAmount * interestRate * loanPeriod);
                 const totalRepayment = Math.floor(loanAmount + totalInterest);
                 resultText = `총 이자: ${formatNumber(totalInterest)} 원\n총 상환액: ${formatNumber(totalRepayment)} 원`;
                 break;
-            case '원금균등분할상환':
+
+            case "원금균등분할상환":
                 const monthlyPrincipal = loanAmount / (loanPeriod * 12);
                 let totalInterest2 = 0;
                 for (let i = 0; i < loanPeriod * 12; i++) {
-                    const remainingLoan = loanAmount - (monthlyPrincipal * i);
+                    const remainingLoan = loanAmount - monthlyPrincipal * i;
                     totalInterest2 += remainingLoan * (interestRate / 12);
                 }
                 const totalRepayment2 = Math.floor(loanAmount + totalInterest2);
-                const monthlyPayment2 = Math.floor(monthlyPrincipal + (totalInterest2 / (loanPeriod * 12)));
+                const monthlyPayment2 = Math.floor(monthlyPrincipal + totalInterest2 / (loanPeriod * 12));
                 resultText = `총 이자: ${formatNumber(totalInterest2)} 원\n총 상환액: ${formatNumber(totalRepayment2)} 원\n매월 상환액: ${formatNumber(monthlyPayment2)} 원`;
                 break;
-            case '원리금균등분할상환':
+
+            case "원리금균등분할상환":
                 const monthlyRate = interestRate / 12;
                 const months = loanPeriod * 12;
-                const monthlyPayment3 = Math.floor((loanAmount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -months)));
+                const monthlyPayment3 = Math.floor(
+                    (loanAmount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -months))
+                );
                 const totalRepayment3 = Math.floor(monthlyPayment3 * months);
                 const totalInterest3 = Math.floor(totalRepayment3 - loanAmount);
                 resultText = `총 이자: ${formatNumber(totalInterest3)} 원\n총 상환액: ${formatNumber(totalRepayment3)} 원\n매월 상환액: ${formatNumber(monthlyPayment3)} 원`;
                 break;
+
             default:
                 console.error("유효하지 않은 상환 방식입니다.");
                 resultText = "오류가 발생했습니다.";
         }
 
+        // 결과 출력
         resultDiv.textContent = resultText;
     } catch (error) {
         console.error("An error occurred:", error);
-        resultDiv.textContent = "계산 중 오류가 발생했습니다.";
+        document.getElementById("result").textContent = "계산 중 오류가 발생했습니다.";
     }
 }
