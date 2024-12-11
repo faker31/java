@@ -1,20 +1,22 @@
 "use strict";
 
 function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    if (isNaN(num)) return ""; // 숫자가 아니면 빈 문자열 반환
+    return num.toLocaleString();
 }
 
 function unformatNumber(str) {
-    if (typeof str === 'string') {
-      return parseFloat(str.replace(/,/g, ""));
-    } else {
-      return NaN;
-    }
+    if (typeof str !== 'string') return NaN;
+    return Number(str.replace(/,/g, ""));
 }
 
-document.getElementById('loanAmount').addEventListener('input', function(e) {
-    this.value = formatNumber(unformatNumber(this.value || 0));
-});
+const loanAmountInput = document.getElementById('loanAmount');
+if (loanAmountInput) { // loanAmountInput이 null이 아닌지 확인
+    loanAmountInput.addEventListener('input', function(e) {
+        this.value = formatNumber(unformatNumber(this.value));
+    });
+}
+
 
 function calculateRepayment() {
     try {
@@ -41,4 +43,35 @@ function calculateRepayment() {
             case '만기일시상환':
                 const totalInterest = Math.floor(loanAmount * interestRate * loanPeriod);
                 const totalRepayment = Math.floor(loanAmount + totalInterest);
-                resultText = `총 이자: ${totalInterest.toLocaleString()} 원\n총 상환액: ${totalRepayment
+                resultText = `총 이자: ${formatNumber(totalInterest)} 원\n총 상환액: ${formatNumber(totalRepayment)} 원`;
+                break;
+            case '원금균등분할상환':
+                const monthlyPrincipal = loanAmount / (loanPeriod * 12);
+                let totalInterest2 = 0;
+                for (let i = 0; i < loanPeriod * 12; i++) {
+                    const remainingLoan = loanAmount - (monthlyPrincipal * i);
+                    totalInterest2 += remainingLoan * (interestRate / 12);
+                }
+                const totalRepayment2 = Math.floor(loanAmount + totalInterest2);
+                const monthlyPayment2 = Math.floor(monthlyPrincipal + (totalInterest2 / (loanPeriod * 12)));
+                resultText = `총 이자: ${formatNumber(totalInterest2)} 원\n총 상환액: ${formatNumber(totalRepayment2)} 원\n매월 상환액: ${formatNumber(monthlyPayment2)} 원`;
+                break;
+            case '원리금균등분할상환':
+                const monthlyRate = interestRate / 12;
+                const months = loanPeriod * 12;
+                const monthlyPayment3 = Math.floor((loanAmount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -months)));
+                const totalRepayment3 = Math.floor(monthlyPayment3 * months);
+                const totalInterest3 = Math.floor(totalRepayment3 - loanAmount);
+                resultText = `총 이자: ${formatNumber(totalInterest3)} 원\n총 상환액: ${formatNumber(totalRepayment3)} 원\n매월 상환액: ${formatNumber(monthlyPayment3)} 원`;
+                break;
+            default:
+                console.error("유효하지 않은 상환 방식입니다.");
+                resultText = "오류가 발생했습니다.";
+        }
+
+        resultDiv.textContent = resultText;
+    } catch (error) {
+        console.error("An error occurred:", error);
+        resultDiv.textContent = "계산 중 오류가 발생했습니다.";
+    }
+}
