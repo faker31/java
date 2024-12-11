@@ -1,0 +1,44 @@
+"use strict";
+
+function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function unformatNumber(str) {
+    if (typeof str === 'string') {
+      return parseFloat(str.replace(/,/g, ""));
+    } else {
+      return NaN;
+    }
+}
+
+document.getElementById('loanAmount').addEventListener('input', function(e) {
+    this.value = formatNumber(unformatNumber(this.value || 0));
+});
+
+function calculateRepayment() {
+    try {
+        const loanAmountInput = document.getElementById('loanAmount').value.trim();
+        const loanAmount = unformatNumber(loanAmountInput);
+        const loanPeriodInput = document.getElementById('loanPeriod').value.trim();
+        const loanPeriod = parseInt(loanPeriodInput);
+        const interestRateInput = document.getElementById('interestRate').value.trim();
+        const interestRate = parseFloat(interestRateInput) / 100;
+        const repaymentMethod = document.getElementById('repaymentMethod').value;
+        const resultDiv = document.getElementById('result');
+
+        resultDiv.textContent = "";
+
+        if (isNaN(loanAmount) || isNaN(loanPeriod) || isNaN(interestRate) || loanAmount <= 0 || loanPeriod <= 0 || interestRate < 0) {
+            console.error("Invalid input:", { loanAmount, loanPeriod, interestRate});
+            resultDiv.textContent = '유효한 값을 입력해주세요 (모든 값은 0보다 커야 합니다).';
+            return;
+        }
+
+        let resultText = '';
+
+        switch (repaymentMethod) {
+            case '만기일시상환':
+                const totalInterest = Math.floor(loanAmount * interestRate * loanPeriod);
+                const totalRepayment = Math.floor(loanAmount + totalInterest);
+                resultText = `총 이자: ${totalInterest.toLocaleString()} 원\n총 상환액: ${totalRepayment
